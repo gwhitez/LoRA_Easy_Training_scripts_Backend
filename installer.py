@@ -79,9 +79,30 @@ def setup_accelerate(platform: str) -> None:
 
 
 def setup_venv(venv_pip):
-    # Se eliminaron las instalaciones específicas de PyTorch, xFormers y requirements.txt local
-    subprocess.check_call(f"{venv_pip} install -U ../custom_scheduler/.", shell=PLATFORM == "linux")
-    subprocess.check_call(f"{venv_pip} install -U -r ../requirements.txt", shell=PLATFORM == "linux")
+    # Convertir a string si es Path
+    if isinstance(venv_pip, Path):
+        venv_pip = str(venv_pip)
+    
+    # Instalar uv con pip
+    subprocess.check_call(f"{venv_pip} install -U uv", shell=PLATFORM=="linux")
+    
+    # Reemplazar pip por uv en la ruta
+    venv_uv = venv_pip.replace("pip", "uv")
+    
+    # Instalar paquetes con uv
+    subprocess.check_call(
+        f"{venv_uv} install -U torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124",
+        shell=PLATFORM == "linux",
+    )
+    if PLATFORM == "windows":
+        subprocess.check_call("venv\\Scripts\\python.exe ..\\fix_torch.py")
+    subprocess.check_call(
+        f"{venv_uv} install -U xformers==0.0.29.post1 --index-url https://download.pytorch.org/whl/cu124",
+        shell=PLATFORM == "linux",
+    )
+    subprocess.check_call(f"{venv_uv} install -U -r requirements.txt", shell=PLATFORM == "linux")
+    subprocess.check_call(f"{venv_uv} install -U ../custom_scheduler/.", shell=PLATFORM == "linux")
+    subprocess.check_call(f"{venv_uv} install -U -r ../requirements.txt", shell=PLATFORM == "linux")
 
 
 # colab only
