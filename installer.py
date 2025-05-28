@@ -78,24 +78,14 @@ def setup_accelerate(platform: str) -> None:
     shutil.move("default_config.yaml", str(path.resolve()))
 
 
-def setup_venv(venv_pip):
-    # Convertir a string si es Path
-    if isinstance(venv_pip, Path):
-        venv_pip = str(venv_pip)
-    
-    # Instalar uv con pip
-    subprocess.check_call(f"{venv_pip} install -U uv", shell=PLATFORM=="linux")
-    
-    # Reemplazar pip por uv en la ruta
-    venv_uv = venv_pip.replace("pip", "uv")
-    
-    # Instalar paquetes con uv
+# Cambiamos pip por uv en todos los comandos de instalación
+def setup_venv(venv_uv, venv_python=None):
     subprocess.check_call(
         f"{venv_uv} install -U torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124",
         shell=PLATFORM == "linux",
     )
     if PLATFORM == "windows":
-        subprocess.check_call("venv\\Scripts\\python.exe ..\\fix_torch.py")
+        subprocess.check_call(f"{venv_python} ..\\fix_torch.py")
     subprocess.check_call(
         f"{venv_uv} install -U xformers==0.0.29.post1 --index-url https://download.pytorch.org/whl/cu124",
         shell=PLATFORM == "linux",
@@ -106,8 +96,8 @@ def setup_venv(venv_pip):
 
 
 # colab only
-def setup_colab(venv_pip):
-    setup_venv(venv_pip)
+def setup_colab(venv_uv, venv_python):
+    setup_venv(venv_uv, venv_python)
     setup_accelerate("linux")
 
 
@@ -173,20 +163,25 @@ def main():
     )
 
     os.chdir("sd_scripts")
+    # Definimos rutas para pip, python y uv en el entorno virtual
     if PLATFORM == "windows":
-        pip = Path("venv/Scripts/pip.exe")
+        venv_python = Path("venv/Scripts/python.exe")
+        venv_pip = Path("venv/Scripts/pip.exe")
+        venv_uv = Path("venv/Scripts/uv.exe")
     else:
-        pip = Path("venv/bin/pip")
+        venv_python = Path("venv/bin/python")
+        venv_pip = Path("venv/bin/pip")
+        venv_uv = Path("venv/bin/uv")
 
     print("creating venv and installing requirements")
     subprocess.check_call(f"{sys.executable} -m venv venv", shell=PLATFORM == "linux")
 
     if len(sys.argv) > 1 and sys.argv[1] == "colab":
-        setup_colab(pip)
+        setup_colab(venv_uv, venv_python)
         print("completed installing")
         quit()
 
-    setup_venv(pip)
+    setup_venv(venv_uv, venv_python)
     setup_accelerate(PLATFORM)
 
     print("Completed installing, you can run the server via the run.bat or run.sh files")
