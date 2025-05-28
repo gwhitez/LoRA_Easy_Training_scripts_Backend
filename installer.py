@@ -80,18 +80,18 @@ def setup_accelerate(platform: str) -> None:
 
 def setup_venv(venv_pip):
     subprocess.check_call(
-        f"{venv_pip} install -U torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124",
+        f"{venv_uv} pip install --no-progress -U torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124",
         shell=PLATFORM == "linux",
     )
     if PLATFORM == "windows":
         subprocess.check_call("venv\\Scripts\\python.exe ..\\fix_torch.py")
     subprocess.check_call(
-        f"{venv_pip} install -U xformers==0.0.29.post1 --index-url https://download.pytorch.org/whl/cu124",
+        f"    {venv_uv} pip install --no-progress -U xformers==0.0.29.post1 --index-url https://download.pytorch.org/whl/cu124",
         shell=PLATFORM == "linux",
     )
-    subprocess.check_call(f"{venv_pip} install -U -r requirements.txt", shell=PLATFORM == "linux")
-    subprocess.check_call(f"{venv_pip} install -U ../custom_scheduler/.", shell=PLATFORM == "linux")
-    subprocess.check_call(f"{venv_pip} install -U -r ../requirements.txt", shell=PLATFORM == "linux")
+    subprocess.check_call(f"{venv_uv} pip install --no-progress -U -r requirements.txt", shell=PLATFORM == "linux")
+    subprocess.check_call(f"{venv_uv} pip install --no-progress -U ../custom_scheduler/.", shell=PLATFORM == "linux")
+    subprocess.check_call(f"{venv_uv} pip install --no-progress -U -r ../requirements.txt", shell=PLATFORM == "linux")
 
 
 # colab only
