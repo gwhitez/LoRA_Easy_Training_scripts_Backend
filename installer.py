@@ -79,12 +79,9 @@ def setup_accelerate(platform: str) -> None:
 
 
 def setup_venv(venv_pip):
-    subprocess.check_call(
-    if PLATFORM == "windows":
-        subprocess.check_call("venv\\Scripts\\python.exe ..\\fix_torch.py")
-    )
-    subprocess.check_call(f"{venv_pip} pip install -U ../custom_scheduler/.", shell=PLATFORM == "linux")
-    subprocess.check_call(f"{venv_pip} pip install -U -r ../requirements.txt", shell=PLATFORM == "linux")
+    # Se eliminaron las instalaciones específicas de PyTorch, xFormers y requirements.txt local
+    subprocess.check_call(f"{venv_pip} install -U ../custom_scheduler/.", shell=PLATFORM == "linux")
+    subprocess.check_call(f"{venv_pip} install -U -r ../requirements.txt", shell=PLATFORM == "linux")
 
 
 # colab only
