@@ -79,22 +79,22 @@ def _load_target_model(
             logit_scale,
             ckpt_info,
         ) = sdxl_model_util.load_models_from_sdxl_checkpoint(model_version, name_or_path, device, model_dtype, disable_mmap)
-else:
+    else:
     # Diffusers model is loaded to CPU - VERSIÓN OPTIMIZADA
-    from transformers import CLIPTextModel, CLIPTextModelWithProjection
-    from diffusers import AutoencoderKL, UNet2DConditionModel
-    import gc
+        from transformers import CLIPTextModel, CLIPTextModelWithProjection
+        from diffusers import AutoencoderKL, UNet2DConditionModel
+        import gc
 
-    variant = "fp16" if weight_dtype == torch.float16 else None
-    torch_dtype = model_dtype or weight_dtype  # Usa dtype explícito
+        variant = "fp16" if weight_dtype == torch.float16 else None
+        torch_dtype = model_dtype or weight_dtype  # Usa dtype explícito
     
-    logger.info(f"load Diffusers pretrained models: {name_or_path}, dtype={torch_dtype}")
+        logger.info(f"load Diffusers pretrained models: {name_or_path}, dtype={torch_dtype}")
 
-    try:
+        try:
         # === Carga selectiva de componentes ===
         
         # Text Encoder 1
-        text_encoder1 = CLIPTextModel.from_pretrained(
+            text_encoder1 = CLIPTextModel.from_pretrained(
             name_or_path, subfolder="text_encoder", torch_dtype=torch_dtype, variant=variant
         )
         if args.lowram and device != "cpu":
