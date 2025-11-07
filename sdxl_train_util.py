@@ -80,65 +80,40 @@ def _load_target_model(
             ckpt_info,
         ) = sdxl_model_util.load_models_from_sdxl_checkpoint(model_version, name_or_path, device, model_dtype, disable_mmap)
     else:
-        # Diffusers model is loaded to CPU - VERSIÓN OPTIMIZADA
-        from transformers import CLIPTextModel, CLIPTextModelWithProjection
-        from diffusers import AutoencoderKL, UNet2DConditionModel
-        import gc
+        # Diffusers model is loaded to CPU
+        from diffusers import StableDiffusionXLPipeline
 
         variant = "fp16" if weight_dtype == torch.float16 else None
-        torch_dtype = model_dtype or weight_dtype  # Usa dtype explícito
-        
-        logger.info(f"load Diffusers pretrained models: {name_or_path}, dtype={torch_dtype}")
-
+        print(f"load Diffusers pretrained models: {name_or_path}, variant={variant}")
         try:
-            # === Carga selectiva de componentes ===
-            
-            # Text Encoder 1
-            text_encoder1 = CLIPTextModel.from_pretrained(
-                name_or_path, subfolder="text_encoder", torch_dtype=torch_dtype, variant=variant
-            )
-            if args.lowram and device != "cpu":
-                text_encoder1.to(device)
-                clean_memory_on_device(device)
-            
-            # Text Encoder 2
-            text_encoder2 = CLIPTextModelWithProjection.from_pretrained(
-                name_or_path, subfolder="text_encoder_2", torch_dtype=torch_dtype, variant=variant
-            )
-            if args.lowram and device != "cpu":
-                text_encoder2.to(device)
-                clean_memory_on_device(device)
-            
-            # VAE
-            vae = AutoencoderKL.from_pretrained(
-                name_or_path, subfolder="vae", torch_dtype=torch_dtype, variant=variant
-            )
-            if args.lowram and device != "cpu":
-                vae.to(device)
-                clean_memory_on_device(device)
-            
-            # U-Net: solo state_dict, sin instanciar el modelo completo
-            temp_unet = UNet2DConditionModel.from_pretrained(
-                name_or_path, subfolder="unet", torch_dtype=torch_dtype, variant=variant
-            )
-            state_dict = sdxl_model_util.convert_diffusers_unet_state_dict_to_sdxl(temp_unet.state_dict())
-            
-            # Limpieza inmediata del U-Net temporal
-            del temp_unet
-            gc.collect()
-            clean_memory_on_device(device)
-            
-            # Creación del U-Net original (mantén tu patrón actual)
-            with init_empty_weights():
-                unet = sdxl_original_unet.SdxlUNet2DConditionModel()
-            sdxl_model_util._load_state_dict_on_device(unet, state_dict, device=device)
-            logger.info("U-Net converted to original U-Net")
-            
+            try:
+                pipe = StableDiffusionXLPipeline.from_pretrained(
+                    name_or_path, torch_dtype=weight_dtype, tokenizer=None
+                )
+            except EnvironmentError as ex:
+                if variant is not None:
+                    print("try to load fp32 model")
+                    pipe = StableDiffusionXLPipeline.from_pretrained(name_or_path, tokenizer=None)
+                else:
+                    raise ex
         except EnvironmentError as ex:
-            logger.error(
+            print(
                 f"model is not found as a file or in Hugging Face, perhaps file name is wrong? / 指定したモデル名のファイル、またはHugging Faceのモデルが見つかりません。ファイル名が誤っているかもしれません: {name_or_path}"
             )
             raise ex
+
+        text_encoder1 = pipe.text_encoder
+        text_encoder2 = pipe.text_encoder_2
+        vae = pipe.vae
+        unet = pipe.unet
+        del pipe
+
+        # Diffusers U-Net to original U-Net
+        state_dict = sdxl_model_util.convert_diffusers_unet_state_dict_to_sdxl(unet.state_dict())
+        with init_empty_weights():
+            unet = sdxl_original_unet.SdxlUNet2DConditionModel()  # overwrite unet
+        sdxl_model_util._load_state_dict_on_device(unet, state_dict, device=device)
+        print("U-Net converted to original U-Net")
 
         logit_scale = None
         ckpt_info = None
