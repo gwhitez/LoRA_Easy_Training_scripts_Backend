@@ -79,7 +79,7 @@ def _load_target_model(
             logit_scale,
             ckpt_info,
         ) = sdxl_model_util.load_models_from_sdxl_checkpoint(model_version, name_or_path, device, model_dtype, disable_mmap)
-    else:
+else:
     # Diffusers model is loaded to CPU - VERSIÓN OPTIMIZADA
         from transformers import CLIPTextModel, CLIPTextModelWithProjection
         from diffusers import AutoencoderKL, UNet2DConditionModel
