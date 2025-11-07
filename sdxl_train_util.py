@@ -97,7 +97,7 @@ def _load_target_model(
             text_encoder1 = CLIPTextModel.from_pretrained(
             name_or_path, subfolder="text_encoder", torch_dtype=torch_dtype, variant=variant
         )
-        if args.lowram and device != "cpu":
+            if args.lowram and device != "cpu":
             text_encoder1.to(device)
             clean_memory_on_device(device)
         
@@ -105,7 +105,7 @@ def _load_target_model(
         text_encoder2 = CLIPTextModelWithProjection.from_pretrained(
             name_or_path, subfolder="text_encoder_2", torch_dtype=torch_dtype, variant=variant
         )
-        if args.lowram and device != "cpu":
+            if args.lowram and device != "cpu":
             text_encoder2.to(device)
             clean_memory_on_device(device)
         
@@ -113,7 +113,7 @@ def _load_target_model(
         vae = AutoencoderKL.from_pretrained(
             name_or_path, subfolder="vae", torch_dtype=torch_dtype, variant=variant
         )
-        if args.lowram and device != "cpu":
+            if args.lowram and device != "cpu":
             vae.to(device)
             clean_memory_on_device(device)
         
