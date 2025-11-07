@@ -80,24 +80,26 @@ def _load_target_model(
             ckpt_info,
         ) = sdxl_model_util.load_models_from_sdxl_checkpoint(model_version, name_or_path, device, model_dtype, disable_mmap)
     else:
-        # Diffusers model is loaded to CPU
         from diffusers import StableDiffusionXLPipeline
+        import gc
 
         variant = "fp16" if weight_dtype == torch.float16 else None
-        print(f"load Diffusers pretrained models: {name_or_path}, variant={variant}")
+        logger.info(f"load Diffusers pretrained models: {name_or_path}, variant={variant}")
         try:
             try:
                 pipe = StableDiffusionXLPipeline.from_pretrained(
-                    name_or_path, torch_dtype=weight_dtype, tokenizer=None
+                    name_or_path, torch_dtype=weight_dtype, variant=variant, tokenizer=None
                 )
             except EnvironmentError as ex:
                 if variant is not None:
-                    print("try to load fp32 model")
-                    pipe = StableDiffusionXLPipeline.from_pretrained(name_or_path, tokenizer=None)
+                    logger.info("try to load fp32 model")
+                    pipe = StableDiffusionXLPipeline.from_pretrained(
+                        name_or_path, tokenizer=None
+                    )
                 else:
                     raise ex
         except EnvironmentError as ex:
-            print(
+            logger.error(
                 f"model is not found as a file or in Hugging Face, perhaps file name is wrong? / 指定したモデル名のファイル、またはHugging Faceのモデルが見つかりません。ファイル名が誤っているかもしれません: {name_or_path}"
             )
             raise ex
@@ -105,15 +107,22 @@ def _load_target_model(
         text_encoder1 = pipe.text_encoder
         text_encoder2 = pipe.text_encoder_2
         vae = pipe.vae
-        unet = pipe.unet
+        temp_unet = pipe.unet
+
         del pipe
+        gc.collect()
+        clean_memory_on_device(device)
 
         # Diffusers U-Net to original U-Net
-        state_dict = sdxl_model_util.convert_diffusers_unet_state_dict_to_sdxl(unet.state_dict())
+        state_dict = sdxl_model_util.convert_diffusers_unet_state_dict_to_sdxl(temp_unet.state_dict())
+        del temp_unet
+        gc.collect()
+        clean_memory_on_device(device)
+
         with init_empty_weights():
             unet = sdxl_original_unet.SdxlUNet2DConditionModel()  # overwrite unet
         sdxl_model_util._load_state_dict_on_device(unet, state_dict, device=device)
-        print("U-Net converted to original U-Net")
+        logger.info("U-Net converted to original U-Net")
 
         logit_scale = None
         ckpt_info = None
