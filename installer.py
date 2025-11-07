@@ -80,14 +80,14 @@ def setup_accelerate(platform: str) -> None:
 
 def setup_venv(venv_uv):
     subprocess.check_call(
-        f"uv pip install --python {venv_uv} torch==2.5.1 torchvision==0.20.1 -f https://download.pytorch.org/whl/cu124 --no-progress",
+        f"uv pip install --python {venv_uv} torch==2.8.0 torchvision==0.23.0 -f https://download.pytorch.org/whl/cu128 --no-progress",
         shell=PLATFORM == "linux",
     )
     if PLATFORM == "windows":
         subprocess.check_call("venv\\Scripts\\python.exe ..\\fix_torch.py")
 
     subprocess.check_call(
-        f"uv pip install --python {venv_uv} xformers==0.0.29.post1 -f https://download.pytorch.org/whl/cu124 --no-progress",
+        f"uv pip install --python {venv_uv} xformers==0.0.32 -f https://download.pytorch.org/whl/cu128 --no-progress",
         shell=PLATFORM == "linux",
     )
     subprocess.check_call(f"uv pip install --python {venv_uv} -r requirements.txt --no-progress", shell=PLATFORM == "linux")
