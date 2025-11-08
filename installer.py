@@ -87,7 +87,7 @@ def setup_venv(venv_uv):
         subprocess.check_call("venv\\Scripts\\python.exe ..\\fix_torch.py")
 
     subprocess.check_call(
-        f"uv pip install --python {venv_uv} xformers==0.0.32 -f https://download.pytorch.org/whl/cu128 --no-progress",
+        f"uv pip install --python {venv_uv} xformers==0.0.32.post1 -f https://download.pytorch.org/whl/cu128 --no-progress",
         shell=PLATFORM == "linux",
     )
     subprocess.check_call(f"uv pip install --python {venv_uv} -r requirements.txt --no-progress", shell=PLATFORM == "linux")
