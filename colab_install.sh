@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python3.10 ./installer.py colab
+/usr/bin/python3.10 ./installer.py colab
